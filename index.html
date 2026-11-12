@@ -1587,8 +1587,6 @@ function drawChrome() {
     ['#/', 'Главная'],
     ['#/table/rpl', 'Таблицы'],
     ['#/fixtures/rpl', 'Расписание'],
-    ['#/insider', '📰 Инсайды' + (S.st?.insidersCount ? ` 🔥` : '')],
-    ['#/esk', '⚖️ ЭСК РФС' + pendingEskBadge],
   ];
   // Вкладка жеребьевки появляется у пользователей только когда админ запускает трансляцию
   if (isAdmin || isDrawLive) {
@@ -1673,7 +1671,7 @@ function route() {
   const [, page, a, b] = (location.hash || '#/').split('/');
   const app = $('#app');
   scrollTo(0, 0);
-  const R = { '': pgHome, undefined: pgHome, table: pgTable, fixtures: pgFixtures, match: pgMatch, draw: pgDraw, leaders: pgLeaders, national: pgNational, insider: pgInsider, esk: pgEsk, weather: (app, a, b) => { if (S.me?.role !== 'admin') { location.hash = '#/'; return pgHome(app); } return pgWeather(app, a, b); }, regulations: pgHome, club: pgClub, admin: pgAdmin, login: pgLogin, team: pgTeamStats };
+  const R = { '': pgHome, undefined: pgHome, table: pgTable, fixtures: pgFixtures, match: pgMatch, draw: pgDraw, leaders: pgLeaders, national: pgNational, insider: (app) => { location.hash = '#/'; return pgHome(app); }, esk: (app) => { location.hash = '#/'; return pgHome(app); }, weather: (app, a, b) => { if (S.me?.role !== 'admin') { location.hash = '#/'; return pgHome(app); } return pgWeather(app, a, b); }, regulations: pgHome, club: pgClub, admin: pgAdmin, login: pgLogin, team: pgTeamStats };
   (R[page] || pgHome)(app, a, b).catch(x => {
     app.innerHTML = `<div class="panel warn">${e(x.message)}</div>`;
   });
@@ -2109,41 +2107,6 @@ async function pgHome(app) {
   const hasAnyTransfers = (topTr?.expensive?.length || 0) > 0 || (topTr?.valuable?.length || 0) > 0 || (topTr?.flops?.length || 0) > 0;
 
   app.innerHTML = `<h1>Сезон ${e(S.st?.season || '2026/27')}</h1>
-
-  <!-- 📰 Инсайдерская Telegram-лента & ⚖️ ЭСК РФС Банеры -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:12px;margin-bottom:16px">
-    <a href="#/insider" style="text-decoration:none;display:block">
-      <div class="panel" style="background:linear-gradient(135deg, #0f172a, #1e293b);color:#fff;border-radius:12px;padding:16px;box-shadow:0 4px 15px rgba(0,0,0,0.1);height:100%;display:flex;flex-direction:column;justify-content:space-between;border:1px solid rgba(255,255,255,0.12);margin-bottom:0">
-        <div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <span style="background:#ea580c;color:#fff;font-weight:800;font-size:11px;padding:2px 8px;border-radius:6px;text-transform:uppercase">🔥 Околофутбольный хайп</span>
-            <span style="font-size:12px;color:#94a3b8">@karpinside · @nobel</span>
-          </div>
-          <h3 style="margin:0 0 6px;color:#fff;font-size:16px">📰 Инсайдерская Telegram-лента</h3>
-          <p style="margin:0;font-size:13px;color:#cbd5e1;line-height:1.4">Трансферные бомбы, судейские скандалы, сливы из раздевалок от Карпа, Нобеля, Шоу Спартака и Мутко против.</p>
-        </div>
-        <div style="margin-top:12px;font-weight:700;font-size:13px;color:#38bdf8;display:flex;align-items:center;gap:6px">
-          Открыть ленту инсайдов →
-        </div>
-      </div>
-    </a>
-
-    <a href="#/esk" style="text-decoration:none;display:block">
-      <div class="panel" style="background:linear-gradient(135deg, #0b1f3a, #1e3a5f);color:#fff;border-radius:12px;padding:16px;box-shadow:0 4px 15px rgba(0,0,0,0.1);height:100%;display:flex;flex-direction:column;justify-content:space-between;border:1px solid #b45309;margin-bottom:0">
-        <div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <span style="background:#b45309;color:#fff;font-weight:800;font-size:11px;padding:2px 8px;border-radius:6px;text-transform:uppercase">⚖️ РФС · Судейский комитет</span>
-            <span style="font-size:12px;color:#94a3b8">Милорад Мажич</span>
-          </div>
-          <h3 style="margin:0 0 6px;color:#fff;font-size:16px">Экспертно-судейская комиссия (ЭСК)</h3>
-          <p style="margin:0;font-size:13px;color:#cbd5e1;line-height:1.4">Разбор спорных пенальти, VAR-стопкадров и удалений. Админ принимает решения, отменяет карточки и наказывает судей.</p>
-        </div>
-        <div style="margin-top:12px;font-weight:700;font-size:13px;color:#facc15;display:flex;align-items:center;gap:6px">
-          Заседания и VAR-кинозал →
-        </div>
-      </div>
-    </a>
-  </div>
 
   ${live.length ? `<div class="panel"><h3><span class="live-dot"></span>Сейчас идут</h3>${live.map(fxRow).join('')}</div>` : ''}
   <div class="grid g2">
@@ -3078,7 +3041,7 @@ ${motm && motmPlayer ? `
   </div>
   <div style="margin-top:8px;font-size:13.5px;color:var(--ink)">${e(motm.headline || motm.interview?.headline || '')}</div>
 </div>` : ''}
-<div class="tabs" id="mt">${[['live', 'Трансляция'], ['stats', 'Статистика'], ['lineups', 'Составы'], ['h2h', 'Последние встречи'], ...(motm || f.status === 'done' ? [['interview', 'Интервью и MOTM']] : []), ...(f.status === 'done' ? [['esk', '⚖️ ЭСК РФС'], ['insider', '📰 Инсайды']] : []), ...(S.me?.role === 'admin' ? [['admin', 'Админ']] : [])].map(([k, t]) => `<button data-k="${k}" class="${k === mtab ? 'on' : ''}">${t}</button>`).join('')}</div>
+<div class="tabs" id="mt">${[['live', 'Трансляция'], ['stats', 'Статистика'], ['lineups', 'Составы'], ['h2h', 'Последние встречи'], ...(motm || f.status === 'done' ? [['interview', 'Интервью и MOTM']] : []), ...(S.me?.role === 'admin' ? [['admin', 'Админ']] : [])].map(([k, t]) => `<button data-k="${k}" class="${k === mtab ? 'on' : ''}">${t}</button>`).join('')}</div>
 <div id="mbody"></div>`;
 
   const bBack = app.querySelector('#btn-back');
@@ -9795,9 +9758,6 @@ function renderDrawWarmupStudio(app) {
         <span id="draw_tg_last_status" style="font-size:11.5px;color:#94a3b8;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
           ${DRAW_CTX.lastTgPost ? `Последний инсайд: ${e(DRAW_CTX.lastTgPost.title)}` : 'События жеребьёвки мгновенно дублируются в Telegram'}
         </span>
-        <a href="#/insider" class="btn alt sm" style="padding:4px 10px;font-size:11px;background:rgba(255,255,255,0.06);color:#38bdf8;border-color:rgba(56,189,248,0.4)">
-          📰 Открыть Telegram-ленту →
-        </a>
       </div>
     </div>
 
@@ -10386,9 +10346,6 @@ function renderDrawLotteryStage(app) {
         <span id="draw_tg_last_status" style="font-size:11.5px;color:#94a3b8;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
           ${DRAW_CTX.lastTgPost ? `Последний инсайд: ${e(DRAW_CTX.lastTgPost.title)}` : 'События жеребьёвки мгновенно дублируются в Telegram'}
         </span>
-        <a href="#/insider" class="btn alt sm" style="padding:4px 10px;font-size:11px;background:rgba(255,255,255,0.06);color:#38bdf8;border-color:rgba(56,189,248,0.4)">
-          📰 Открыть Telegram-ленту →
-        </a>
       </div>
     </div>
 
